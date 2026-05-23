@@ -1,0 +1,38 @@
+storage:
+  kuzu:
+    path: .eidos/graph.db
+  lancedb:
+    path: .eidos/vectors
+  sqlite:
+    path: .eidos/metadata.db
+
+models:
+  embedding:
+    provider: fastembed
+    model: BAAI/bge-small-en-v1.5
+    dimension: 384
+  llm:
+    provider: ollama
+    model: qwen2.5:7b
+    base_url: http://localhost:11434
+
+ingest:
+  languages:
+    - python
+    - typescript
+    - javascript
+    - go
+    - rust
+    - java
+    - c
+    - cpp
+  max_file_size_mb: 10
+  exclude_patterns:
+    - node_modules/**
+    - .git/**
+    - "*.min.js"
+    - __pycache__/**
+    - .venv/**
+    - dist/**
+    - build/**
+    - .eidos/**
