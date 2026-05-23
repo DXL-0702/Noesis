@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="./README.md">English</a> ·
-  <a href="./CLAUDE.md">架构文档</a>
+  <a href="./docs/architecture.md">架构文档</a>
 </p>
 
 <p align="center">

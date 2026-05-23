@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="./README.zh-CN.md">中文文档</a> ·
-  <a href="./CLAUDE.md">Architecture</a>
+  <a href="./docs/architecture.md">Architecture</a>
 </p>
 
 <p align="center">
