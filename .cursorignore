@@ -1,0 +1,4 @@
+# Eidos graph cache artifacts
+.eidos/
+*.lance/
+*.db
