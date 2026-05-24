@@ -21,6 +21,8 @@ class ChunkRecord(LanceModel):
 
 
 class LanceDBStore(VectorStore):
+    _filterable_fields = {"chunk_id", "source_file", "modality"}
+
     def __init__(self) -> None:
         self._db: lancedb.DBConnection | None = None
         self._table: lancedb.table.Table | None = None
@@ -63,8 +65,11 @@ class LanceDBStore(VectorStore):
         if filters:
             filter_parts = []
             for key, value in filters.items():
+                if key not in self._filterable_fields:
+                    raise ValueError(f"Unsupported LanceDB filter field: {key}")
                 if isinstance(value, str):
-                    filter_parts.append(f"{key} = '{value}'")
+                    safe_value = value.replace("'", "''")
+                    filter_parts.append(f"{key} = '{safe_value}'")
                 else:
                     filter_parts.append(f"{key} = {value}")
             if filter_parts:
