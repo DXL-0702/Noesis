@@ -8,6 +8,7 @@ import numpy as np
 from lancedb.pydantic import LanceModel, Vector
 
 from eidos.core.types import Chunk, ChunkResult
+from eidos.store.base import VectorStore
 
 
 class ChunkRecord(LanceModel):
@@ -19,7 +20,7 @@ class ChunkRecord(LanceModel):
     created_at: str
 
 
-class LanceDBStore:
+class LanceDBStore(VectorStore):
     def __init__(self) -> None:
         self._db: lancedb.DBConnection | None = None
         self._table: lancedb.table.Table | None = None

@@ -17,6 +17,9 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
+from eidos.core.types import Chunk, Document, Evidence, GraphVersion, Source
+from eidos.store.base import MetadataStore as MetadataStoreBase
+
 
 class Base(DeclarativeBase):
     pass
@@ -120,7 +123,7 @@ Index("idx_chunks_document", "chunks.document_id")
 Index("idx_documents_source", "documents.source_id")
 
 
-class MetadataStore:
+class MetadataStore(MetadataStoreBase):
     def __init__(self) -> None:
         self._engine = None
         self._session_maker = None
@@ -148,7 +151,14 @@ class MetadataStore:
         existing = set(inspector.get_table_names())
         return expected <= existing
 
-    def upsert_source(self, record: SourceRecord) -> None:
+    def upsert_source(self, source: Source) -> None:
+        record = SourceRecord(
+            id=source.id,
+            path=source.path,
+            url=source.url,
+            type=source.type,
+            created_at=source.created_at or _now(),
+        )
         with self._session_maker() as session:
             existing = session.get(SourceRecord, record.id)
             if existing:
@@ -159,7 +169,15 @@ class MetadataStore:
                 session.add(record)
             session.commit()
 
-    def upsert_document(self, record: DocumentRecord) -> None:
+    def upsert_document(self, document: Document) -> None:
+        record = DocumentRecord(
+            id=document.id,
+            source_id=document.source_id,
+            path=document.path,
+            title=document.title,
+            language=document.language,
+            parsed_at=document.parsed_at or _now(),
+        )
         with self._session_maker() as session:
             existing = session.get(DocumentRecord, record.id)
             if existing:
@@ -170,7 +188,15 @@ class MetadataStore:
                 session.add(record)
             session.commit()
 
-    def upsert_chunk(self, record: ChunkRecord) -> None:
+    def upsert_chunk(self, chunk: Chunk) -> None:
+        record = ChunkRecord(
+            id=chunk.id,
+            document_id=chunk.document_id,
+            content=chunk.content,
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            modality=chunk.modality,
+        )
         with self._session_maker() as session:
             existing = session.get(ChunkRecord, record.id)
             if existing:
@@ -182,18 +208,47 @@ class MetadataStore:
                 session.add(record)
             session.commit()
 
-    def get_provenance(self, entity_id: str) -> list[EvidenceRecord]:
+    def get_provenance(self, entity_id: str) -> list[Evidence]:
         with self._session_maker() as session:
-            return session.query(EvidenceRecord).filter_by(entity_id=entity_id).all()
+            rows = session.query(EvidenceRecord).filter_by(entity_id=entity_id).all()
+            return [
+                Evidence(
+                    id=row.id,
+                    relation_id=row.relation_id,
+                    entity_id=row.entity_id,
+                    source_file=row.source_file,
+                    span_start=row.span_start,
+                    span_end=row.span_end,
+                    extractor=row.extractor,
+                    created_at=row.created_at,
+                )
+                for row in rows
+            ]
 
-    def create_snapshot(self, record: GraphVersionRecord) -> None:
+    def create_snapshot(self, version: GraphVersion) -> None:
+        record = GraphVersionRecord(
+            id=version.id,
+            created_at=version.created_at or _now(),
+            snapshot_path=version.snapshot_path,
+            metadata_diff=version.metadata_diff,
+            parent_version_id=version.parent_version_id,
+        )
         with self._session_maker() as session:
             session.add(record)
             session.commit()
 
-    def get_snapshot(self, version_id: str) -> GraphVersionRecord | None:
+    def get_snapshot(self, version_id: str) -> GraphVersion | None:
         with self._session_maker() as session:
-            return session.get(GraphVersionRecord, version_id)
+            row = session.get(GraphVersionRecord, version_id)
+            if row is None:
+                return None
+            return GraphVersion(
+                id=row.id,
+                created_at=row.created_at,
+                snapshot_path=row.snapshot_path,
+                metadata_diff=row.metadata_diff,
+                parent_version_id=row.parent_version_id,
+            )
 
 
 def _now() -> str:
