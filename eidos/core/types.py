@@ -23,3 +23,19 @@ class Relation(BaseModel):
 class Path(BaseModel):
     nodes: list[Entity]
     edges: list[Relation]
+
+
+class Chunk(BaseModel):
+    id: str
+    document_id: str = ""
+    content: str = ""
+    start_line: int = 0
+    end_line: int = 0
+    modality: str = "code"
+    embedding: list[float] = Field(default_factory=list)
+    created_at: str = ""
+
+
+class ChunkResult(BaseModel):
+    chunk: Chunk
+    score: float = 0.0
