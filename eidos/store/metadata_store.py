@@ -18,7 +18,7 @@ from sqlalchemy.orm import (
 )
 
 from eidos.core.types import Chunk, Document, Evidence, GraphVersion, Source
-from eidos.store.base import MetadataStore as MetadataStoreBase
+from eidos.store.base import MetadataStore
 
 
 class Base(DeclarativeBase):
@@ -123,12 +123,12 @@ Index("idx_chunks_document", "chunks.document_id")
 Index("idx_documents_source", "documents.source_id")
 
 
-class MetadataStore(MetadataStoreBase):
+class SQLiteMetadataStore(MetadataStore):
     def __init__(self) -> None:
         self._engine = None
         self._session_maker = None
 
-    def connect(self, db_path: str) -> "MetadataStore":
+    def connect(self, db_path: str) -> "SQLiteMetadataStore":
         self._engine = create_engine(f"sqlite:///{db_path}")
         self._session_maker = sessionmaker(bind=self._engine)
         return self

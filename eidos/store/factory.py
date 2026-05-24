@@ -5,7 +5,7 @@ from eidos.core.config import Settings
 from eidos.store.base import GraphStore, MetadataStore, VectorStore
 from eidos.store.kuzu_store import KuzuStore
 from eidos.store.lancedb_store import LanceDBStore
-from eidos.store.metadata_store import MetadataStore as SQLiteMetadataStore
+from eidos.store.metadata_store import SQLiteMetadataStore
 
 
 def get_graph_store(config: Settings) -> GraphStore:

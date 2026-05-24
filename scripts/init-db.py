@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from eidos.store.metadata_store import MetadataStore
+from eidos.store.metadata_store import SQLiteMetadataStore
 
 
 def main() -> None:
@@ -17,7 +17,7 @@ def main() -> None:
 
     Path(args.db_path).parent.mkdir(parents=True, exist_ok=True)
 
-    store = MetadataStore().connect(args.db_path)
+    store = SQLiteMetadataStore().connect(args.db_path)
     store.create_tables()
 
     if store.tables_exist():
