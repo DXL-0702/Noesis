@@ -6,9 +6,10 @@ from typing import Any
 import kuzu
 
 from eidos.core.types import Entity, Path, Relation
+from eidos.store.base import GraphStore
 
 
-class KuzuStore:
+class KuzuStore(GraphStore):
     def __init__(self) -> None:
         self._db: kuzu.Database | None = None
         self._conn: kuzu.Connection | None = None
