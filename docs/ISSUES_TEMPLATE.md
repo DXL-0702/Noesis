@@ -1,335 +1,474 @@
-# Eidos v0.1 Nebula — Phase 1 任务清单
+# Eidos v0.1 Nebula — Phase 2 任务清单
 
-> 基础设施层（第 1–2 周）。Phase 2 的解析工作开始前，Phase 1 所有任务必须全部完成。
+> 多模态解析层（第 3–4 周）。Phase 2 的目标是完成本地文件扫描、内容哈希缓存、代码/文档解析和基础分块，为 Phase 3 的实体/关系抽取与存储写入提供稳定输入。
 
 ---
 
-## [core] #1 初始化 Python 项目骨架
+## [ingest] #15 本地文件扫描与文件类型识别
 
-**Scope**: `core`
+**Scope**: `ingest`
 **优先级**: P0
 **预估工作量**: 1 天
 
 ### 描述
-搭建 Eidos Python 包的基础结构和现代工具链，为后续所有模块提供一致的开发基座。
+实现本地目录扫描器，负责递归发现项目文件、应用忽略规则、识别文件类型和模态，为后续解析器分发提供统一入口。
 
 ### 任务
 
-- [ ] 创建 `pyproject.toml`：
-  - 项目元数据（name, version, description, authors, license）
-  - Python `>= 3.11` 版本要求
-  - 核心依赖：`fastapi`, `pydantic`, `pydantic-settings`, `typer`, `sqlalchemy`, `kuzu`, `lancedb`, `tree-sitter`, `tree-sitter-python`, `tree-sitter-javascript`, `PyMuPDF`, `markdown-it-py`, `Pillow`, `pytesseract`, `fastembed`, `httpx`（Ollama HTTP 调用）
-  - 开发依赖：`pytest`, `pytest-asyncio`, `black`, `ruff`, `mypy`
-- [ ] 创建 `eidos/__init__.py`，写入版本常量
-- [ ] 在 `pyproject.toml` 中配置 `pytest`（从 `tests/` 目录发现测试）
-- [ ] 配置 `black`：行长度 88，目标版本 py311
-- [ ] 配置 `ruff` 规则：E, F, I, N, W, UP, B, C4, SIM
-- [ ] 添加 `.gitignore`（Python、Node、IDE 模式）
-- [ ] 添加 `.cursorignore`（忽略图谱缓存文件）
+- [ ] 创建 `eidos/ingest/__init__.py`
+- [ ] 创建 `eidos/ingest/local_scanner.py`
+- [ ] 定义 `ScannedFile` 模型或复用现有 Pydantic 类型扩展字段：
+  - `path`
+  - `relative_path`
+  - `suffix`
+  - `size_bytes`
+  - `modality`
+  - `language`
+- [ ] 支持递归扫描指定目录
+- [ ] 应用 `Settings.ingest.exclude_patterns`
+- [ ] 跳过超过 `max_file_size_mb` 的文件
+- [ ] 根据后缀识别模态：
+  - code：`.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.rs`, `.java`, `.c`, `.cpp`, `.h`, `.hpp`
+  - document：`.md`, `.txt`, `.log`, `.pdf`
+  - image：`.png`, `.jpg`, `.jpeg`, `.webp`
+- [ ] 根据后缀识别语言：python、typescript、javascript、go、rust、java、c、cpp、markdown、text、pdf、image
 
 ### 验收标准
 
-- [ ] 在干净的虚拟环境中 `pip install -e .` 成功
-- [ ] `pytest` 可以运行，零测试、零导入错误
-- [ ] `black eidos/` 格式化无错误
-- [ ] `ruff check eidos/` 通过，零违规
-- [ ] `python -c "import eidos; print(eidos.__version__)"` 正常输出
+- [ ] 扫描一个包含代码、Markdown、PDF、图片的测试目录，能返回正确文件列表
+- [ ] `node_modules/**`、`.git/**`、`.eidos/**` 被正确忽略
+- [ ] 超过大小限制的文件被跳过
+- [ ] 每个返回文件都包含相对路径、模态、语言、大小信息
 
 ### 依赖
-无（第一个任务）。
+- Phase 1 #2（配置系统）
+- Phase 1 #6（共享类型）
 
 ---
 
-## [core] #2 Pydantic Settings 配置系统
+## [ingest] #16 内容哈希缓存
 
-**Scope**: `core`
+**Scope**: `ingest`
 **优先级**: P0
 **预估工作量**: 1 天
 
 ### 描述
-构建类型安全、环境感知的配置系统，从 `eidos.yaml` 和环境变量加载配置。所有存储 URI、模型端点、流水线参数的唯一可信来源。
+实现 SHA-256 内容哈希计算，为增量解析和后续 changed-file-only reprocessing 打基础。Phase 2 只实现哈希计算与缓存读写，不做完整增量更新。
 
 ### 任务
 
-- [ ] 创建 `eidos/core/config.py`，定义 `Settings` 类（Pydantic Settings v2）：
-  - `storage.kuzu.path` — 默认 `.eidos/graph.db`
-  - `storage.lancedb.path` — 默认 `.eidos/vectors`
-  - `storage.sqlite.path` — 默认 `.eidos/metadata.db`
-  - `models.embedding.provider` — 默认 `"fastembed"`
-  - `models.embedding.model` — 默认 `"BAAI/bge-small-en-v1.5"`
-  - `models.llm.provider` — 默认 `"ollama"`
-  - `models.llm.model` — 默认 `"qwen2.5:7b"`
-  - `models.llm.base_url` — 默认 `"http://localhost:11434"`
-  - `ingest.languages` — 默认 6 种语言列表
-  - `ingest.exclude_patterns` — 默认忽略列表（`node_modules/**`, `.git/**` 等）
-- [ ] 在仓库根目录创建 `eidos.yaml` 模板
-- [ ] 支持环境变量覆盖：`EIDOS_STORAGE__KUZU__PATH`, `EIDOS_MODELS__LLM__MODEL`
-- [ ] 启动时校验配置（检查存储路径可写、Ollama 可访问）
+- [ ] 创建 `eidos/ingest/hash_cache.py`
+- [ ] 实现 `compute_file_hash(path: Path) -> str`
+- [ ] 实现 `HashCache`：
+  - `load()`
+  - `save()`
+  - `get(path)`
+  - `set(path, hash, metadata)`
+  - `has_changed(path, current_hash)`
+- [ ] 缓存文件默认写入 `.eidos/cache/file_hashes.json`
+- [ ] 缓存 metadata 至少包含：
+  - `hash`
+  - `size_bytes`
+  - `mtime`
+  - `parser_version`
+- [ ] 与 #15 `ScannedFile` 结合，标记 `changed: bool`
 
 ### 验收标准
 
-- [ ] `eidos init` CLI 命令能从默认值生成合法的 `eidos.yaml`
-- [ ] 修改环境变量可以覆盖 yaml 中的值
-- [ ] 非法配置（如缺少必填项）抛出清晰的 `ValidationError`
-- [ ] Config 对象可从 `eidos.core.config` 导入，且单例安全
+- [ ] 同一文件内容不变时，连续两次 hash 一致
+- [ ] 修改文件内容后，hash 变化
+- [ ] `HashCache.has_changed()` 能正确识别新增、未变更、已变更文件
+- [ ] 缓存 JSON 可重复加载，不丢失 metadata
 
 ### 依赖
-- #1（项目骨架）
+- #15 本地文件扫描
 
 ---
 
-## [store] #3 Kuzu 图数据库初始化
+## [parse] #17 tree-sitter 代码解析基础框架
 
-**Scope**: `store`
+**Scope**: `parse`
+**优先级**: P0
+**预估工作量**: 1 天
+
+### 描述
+建立代码解析器的通用框架，负责根据语言选择 tree-sitter parser，并输出统一的代码结构结果。该任务只做框架，不实现具体语言查询逻辑。
+
+### 任务
+
+- [ ] 创建 `eidos/parse/__init__.py`
+- [ ] 创建 `eidos/parse/code_parser.py`
+- [ ] 定义 `CodeSymbol` 模型：
+  - `id`
+  - `name`
+  - `kind`（function/class/method/import/call）
+  - `file_path`
+  - `start_line`
+  - `end_line`
+  - `text`
+- [ ] 定义 `CodeParseResult` 模型：
+  - `file_path`
+  - `language`
+  - `symbols`
+  - `imports`
+  - `calls`
+  - `errors`
+- [ ] 实现 `CodeParserRegistry`
+  - 根据 language 返回对应 parser
+  - 不支持语言时返回清晰错误
+- [ ] 实现基础 `parse_file(path, language)` 入口
+- [ ] 抽象语言解析器基类 `LanguageParser`
+
+### 验收标准
+
+- [ ] 传入不支持语言时，返回明确错误而不是崩溃
+- [ ] Registry 能根据 `python`、`typescript`、`go` 返回对应 parser 占位实现
+- [ ] `CodeParseResult` 可序列化为 JSON
+- [ ] 框架不依赖具体业务存储层
+
+### 依赖
+- Phase 1 #6（共享类型）
+- #15 本地文件扫描
+
+---
+
+## [parse] #18 Python 代码解析器
+
+**Scope**: `parse`
 **优先级**: P0
 **预估工作量**: 1–2 天
 
 ### 描述
-使用 Kuzu（嵌入式 Cypher 兼容图数据库）初始化默认图存储。Kuzu 零外部服务，本地文件运行，与 Eidos 本地优先原则对齐。
+基于 tree-sitter 实现 Python 代码解析，抽取函数、类、方法、import 和函数调用。Python 是 Phase 2 首个完整语言实现。
 
 ### 任务
 
-- [ ] 在 `pyproject.toml` 中添加 `kuzu` 依赖
-- [ ] 创建 `eidos/store/kuzu_store.py`，实现 `GraphStore` 接口：
-  - `connect(db_path: str) -> KuzuConnection`
-  - `upsert_node(entity: Entity) -> None`
-  - `upsert_edge(relation: Relation) -> None`
-  - `traverse(start_id: str, depth: int) -> list[Path]`
-  - `execute_cypher(query: str, params: dict) -> list[dict]`
-- [ ] 定义核心节点/边的 Cypher Schema：
-  - `CREATE NODE TABLE Entity(id STRING PRIMARY KEY, name STRING, type STRING, modality STRING, source_id STRING, confidence STRING)`
-  - `CREATE REL TABLE RELATION(FROM Entity TO Entity, type STRING, confidence STRING, extractor STRING)`
-- [ ] 管理 Kuzu 连接生命周期（首次使用时打开，关闭时释放）
-- [ ] 添加基础连接健康检查
+- [ ] 在 `code_parser.py` 或 `python_parser.py` 中实现 `PythonParser`
+- [ ] 加载 tree-sitter Python grammar
+- [ ] 抽取：
+  - function definition
+  - class definition
+  - method definition
+  - import statement
+  - from-import statement
+  - call expression
+- [ ] 记录每个 symbol 的起止行号和源码片段
+- [ ] 为 symbol 生成稳定 ID：`{relative_path}:{kind}:{name}:{start_line}`
+- [ ] 对语法错误文件返回 `errors`，不中断整体解析
 
 ### 验收标准
 
-- [ ] `KuzuStore.connect(".eidos/graph.db")` 创建合法的 Kuzu 数据库文件
-- [ ] 插入一个实体和一条关系后，从该实体遍历返回预期路径
-- [ ] Cypher `MATCH (e:Entity) RETURN e.id, e.name` 返回已插入数据
-- [ ] 同一实体 ID 多次 upsert 是幂等的（更新而非重复）
+- [ ] 解析包含函数、类、方法、import、调用的 Python fixture
+- [ ] 函数/类/方法数量正确
+- [ ] import 与 from-import 被识别
+- [ ] 调用表达式被识别
+- [ ] 起止行号正确
+- [ ] 语法错误文件不会导致解析器崩溃
 
 ### 依赖
-- #1（项目骨架）
-- #2（配置系统，用于 db path）
+- #17 tree-sitter 代码解析基础框架
 
 ---
 
-## [store] #4 LanceDB 向量数据库初始化
+## [parse] #19 TypeScript / JavaScript 代码解析器
 
-**Scope**: `store`
-**优先级**: P0
-**预估工作量**: 1 天
-
-### 描述
-使用 LanceDB（本地文件向量数据库）初始化默认向量存储。零运维开销，存放 chunk 嵌入，供 GraphRAG 流水线语义检索。
-
-### 任务
-
-- [ ] 在 `pyproject.toml` 中添加 `lancedb` 依赖
-- [ ] 创建 `eidos/store/lancedb_store.py`，实现 `VectorStore` 接口：
-  - `connect(db_path: str) -> LanceDBConnection`
-  - `upsert_chunks(chunks: list[Chunk]) -> None`
-  - `search(query_embedding: list[float], top_k: int, filters: dict | None) -> list[ChunkResult]`
-- [ ] 定义 LanceDB 表结构：
-  - `chunk_id` (STRING, primary key)
-  - `content` (STRING)
-  - `source_file` (STRING)
-  - `modality` (STRING)
-  - `embedding` (固定维度向量，维度从配置读取)
-  - `created_at` (TIMESTAMP)
-- [ ] 从 `eidos.yaml` 读取向量维度配置
-- [ ] 搜索支持元数据过滤（如 `modality == "code"`）
-
-### 验收标准
-
-- [ ] `LanceDBStore.connect(".eidos/vectors")` 创建合法的 LanceDB 数据集目录
-- [ ] 成功 upsert 10 条 384 维 embedding 的 chunk
-- [ ] 用随机 384 维向量搜索，返回按相似度排序的 chunk
-- [ ] 按 `modality` 过滤搜索，只返回匹配 modality 的 chunk
-
-### 依赖
-- #1（项目骨架）
-- #2（配置系统）
-
----
-
-## [store] #5 SQLite 元数据 Schema
-
-**Scope**: `store`
+**Scope**: `parse`
 **优先级**: P0
 **预估工作量**: 1–2 天
 
 ### 描述
-设计并初始化 SQLite 元数据数据库，存放溯源记录、源文档、chunk 元数据、图谱版本信息。这是知识图谱的审计追踪层。
+基于 tree-sitter 实现 TypeScript / JavaScript 代码解析，抽取函数、类、方法、import/export 和调用表达式。前端项目分析依赖此能力。
 
 ### 任务
 
-- [ ] 创建 `eidos/store/metadata_store.py`，实现 `MetadataStore` 接口：
-  - `connect(db_path: str) -> Engine`
-  - `create_tables() -> None` — 幂等建表
-- [ ] 定义 SQLAlchemy 2.0 模型：
-  - `Source` — id, path, url, type, created_at
-  - `Document` — id, source_id, path, title, language, parsed_at
-  - `Chunk` — id, document_id, content, start_line, end_line, modality
-  - `Entity` — id, name, type, modality, source_id, document_id, chunk_id, confidence, extractor
-  - `Relation` — id, source_entity_id, target_entity_id, type, confidence, extractor
-  - `Evidence` — id, relation_id | entity_id, source_file, span_start, span_end, extractor, created_at
-  - `GraphVersion` — id, created_at, snapshot_path, metadata_diff, parent_version_id
-  - `AnswerTrace` — id, query, answer, confidence, created_at, version_id
-- [ ] 创建迁移/初始化脚本 `scripts/init-db.py`
-- [ ] 在频繁查询的列上添加外键约束和索引
+- [ ] 实现 `TypeScriptParser`
+- [ ] 加载 tree-sitter JavaScript / TypeScript grammar
+- [ ] 抽取：
+  - function declaration
+  - arrow function
+  - class declaration
+  - method definition
+  - import statement
+  - export statement
+  - call expression
+- [ ] 支持 `.ts`, `.tsx`, `.js`, `.jsx`
+- [ ] 记录 symbol 起止行和源码片段
+- [ ] 生成稳定 ID：`{relative_path}:{kind}:{name}:{start_line}`
 
 ### 验收标准
 
-- [ ] `MetadataStore.create_tables()` 在新的 SQLite 文件中创建全部 8 张表
-- [ ] 插入 Source → Document → Chunk → Entity → Relation → Evidence 链路，外键完整性通过
-- [ ] `SELECT * FROM evidence WHERE entity_id = ?` 返回关联的 evidence 行
-- [ ] Schema 可复现：删除 db 文件后重新执行 `create_tables()`，得到完全相同的 schema
+- [ ] 解析包含 React 组件、class、函数、import 的 TS fixture
+- [ ] arrow function 被识别
+- [ ] import/export 被识别
+- [ ] 调用表达式被识别
+- [ ] `.ts` 和 `.tsx` 都能解析
 
 ### 依赖
-- #1（项目骨架）
-- #2（配置系统）
+- #17 tree-sitter 代码解析基础框架
 
 ---
 
-## [core] #6 共享类型定义（Pydantic Models）
+## [parse] #20 Go 代码解析器
 
-**Scope**: `core`
+**Scope**: `parse`
+**优先级**: P1
+**预估工作量**: 1 天
+
+### 描述
+基于 tree-sitter 实现 Go 代码解析，抽取 package、import、function、method 和 call expression。Go 是 Phase 2 的第三个语言目标。
+
+### 任务
+
+- [ ] 添加 Go tree-sitter grammar 依赖
+- [ ] 实现 `GoParser`
+- [ ] 抽取：
+  - package declaration
+  - import declaration
+  - function declaration
+  - method declaration
+  - call expression
+- [ ] 记录 symbol 起止行和源码片段
+- [ ] 生成稳定 ID
+
+### 验收标准
+
+- [ ] 解析包含 package/import/function/method/call 的 Go fixture
+- [ ] package 名称可识别
+- [ ] 函数和方法数量正确
+- [ ] 调用表达式被识别
+
+### 依赖
+- #17 tree-sitter 代码解析基础框架
+
+---
+
+## [parse] #21 代码实体抽取与关系抽取
+
+**Scope**: `parse`
+**优先级**: P0
+**预估工作量**: 1–2 天
+
+### 描述
+将代码解析结果转为 Eidos 的标准 Entity / Relation 模型。该任务不写入数据库，只负责构建确定性抽取结果，为 Phase 3 存储写入做准备。
+
+### 任务
+
+- [ ] 创建 `eidos/parse/code_entities.py`
+- [ ] 实现 `symbols_to_entities(result: CodeParseResult) -> list[Entity]`
+- [ ] 实现 `symbols_to_relations(result: CodeParseResult) -> list[Relation]`
+- [ ] 关系映射：
+  - 文件 → 函数/类：`DEFINES`
+  - 类 → 方法：`CONTAINS`
+  - 文件 → import：`IMPORTS`
+  - 函数/方法 → 调用：`CALLS`
+- [ ] 所有确定性关系 confidence = `EXTRACTED`
+- [ ] 所有关系 extractor = `tree-sitter`
+- [ ] Entity/Relation ID 必须稳定、可重复
+
+### 验收标准
+
+- [ ] Python fixture 能生成 Entity 列表和 Relation 列表
+- [ ] TypeScript fixture 能生成 Entity 列表和 Relation 列表
+- [ ] `DEFINES`、`IMPORTS`、`CALLS` 至少三类关系可生成
+- [ ] 同一文件重复解析两次，Entity/Relation ID 完全一致
+
+### 依赖
+- #18 Python 代码解析器
+- #19 TypeScript / JavaScript 代码解析器
+- Phase 1 #6（共享类型）
+
+---
+
+## [parse] #22 Markdown / TXT 文档解析
+
+**Scope**: `parse`
 **优先级**: P0
 **预估工作量**: 1 天
 
 ### 描述
-定义所有 Eidos 模块共用的标准数据模型。Pydantic v2 模型在系统边界处强制执行类型安全、序列化一致性和 Schema 校验。
+实现 Markdown 和纯文本解析，输出文档结构、标题层级、链接、代码块和文本段落，为后续文档实体抽取与分块提供输入。
 
 ### 任务
 
-- [ ] 创建 `eidos/core/types.py`，定义模型：
-  - `Source` — 数据来源
-  - `Document` — 解析后的文档元数据
-  - `Chunk` — 可嵌入的片段，含 span 信息
-  - `Entity` — 知识节点，含溯源字段
-  - `Relation` — 带置信度和抽取器的类型化边
-  - `Evidence` — 证明实体/关系的源片段
-  - `GraphVersion` — 快照元数据
-  - `AnswerTrace` — 推理路径记录
-  - `ChunkResult` — 向量搜索结果包装器
-  - `Path` — 图遍历路径（节点 + 边 + 证据）
-- [ ] 创建 `eidos/core/constants.py`：
-  - `RelationType` 枚举（DEFINES, IMPORTS, CALLS, REFERENCES, EXTENDS, IMPLEMENTS, CONTAINS, DEPENDS_ON, DOCUMENTS, MENTIONS, ALIGNS_WITH, TESTS）
-  - `ConfidenceLabel` 枚举（EXTRACTED, INFERRED, AMBIGUOUS, CONFLICT）
-  - `Modality` 枚举（CODE, DOCUMENT, IMAGE）
-- [ ] 所有模型配置 `model_config = ConfigDict(strict=True)`（如适用）
-- [ ] 为 API 响应添加 JSON 序列化方法
+- [ ] 创建 `eidos/parse/doc_parser.py`
+- [ ] 定义 `DocumentParseResult`：
+  - `file_path`
+  - `title`
+  - `sections`
+  - `links`
+  - `code_blocks`
+  - `paragraphs`
+  - `errors`
+- [ ] 使用 `markdown-it-py` 解析 Markdown
+- [ ] 抽取标题层级（h1–h6）
+- [ ] 抽取链接和代码块
+- [ ] TXT 按空行分段
+- [ ] 对异常编码文件返回 errors，不中断解析
 
 ### 验收标准
 
-- [ ] 全部 8+ 个模型可用合法数据实例化并序列化为 JSON
-- [ ] 非法数据（错误类型、缺少必填字段）抛出 `ValidationError`
-- [ ] `RelationType.CALLS.value == "CALLS"`，所有枚举值正确
-- [ ] 模型可从 `eidos.core.types` 导入，无循环导入问题
+- [ ] Markdown fixture 的标题、链接、代码块数量正确
+- [ ] TXT fixture 能按段落切分
+- [ ] 非 UTF-8 文件不导致解析器崩溃
+- [ ] `DocumentParseResult` 可 JSON 序列化
 
 ### 依赖
-- #1（项目骨架）
+- #15 本地文件扫描
 
 ---
 
-## [store] #7 存储抽象接口
+## [parse] #23 PDF 文档解析
 
-**Scope**: `store`
+**Scope**: `parse`
+**优先级**: P1
+**预估工作量**: 1 天
+
+### 描述
+实现 PDF 文本提取，保留页码信息和基本段落结构。Phase 2 不做复杂版面理解，只提供可用于分块和溯源的文本层。
+
+### 任务
+
+- [ ] 在 `doc_parser.py` 中实现 PDF parser
+- [ ] 使用 PyMuPDF 提取每页文本
+- [ ] 保留 page number
+- [ ] 按页和空行构建段落
+- [ ] 对扫描版 PDF 返回清晰提示（无文本层，后续 OCR 处理）
+
+### 验收标准
+
+- [ ] 文本型 PDF fixture 能提取页码和文本
+- [ ] 每个段落能追溯到页码
+- [ ] 空白 PDF 或扫描版 PDF 不崩溃，返回 errors
+
+### 依赖
+- #22 Markdown / TXT 文档解析
+
+---
+
+## [parse] #24 分块策略：代码函数级 + 文档语义段落级
+
+**Scope**: `parse`
 **优先级**: P0
 **预估工作量**: 1 天
 
 ### 描述
-为三种存储后端定义抽象基类。这些接口允许在不改动业务逻辑的情况下替换后端实现（如 Kuzu → Neo4j，LanceDB → Qdrant）。
+实现统一分块策略，将代码解析结果和文档解析结果转为标准 Chunk。代码按函数/类粒度切分，文档按标题/段落语义切分。
 
 ### 任务
 
-- [ ] 创建 `eidos/store/base.py`，定义三个 ABC：
-  - `GraphStore`
-    - `upsert_node(entity: Entity) -> None`
-    - `upsert_edge(relation: Relation) -> None`
-    - `get_entity(entity_id: str) -> Entity | None`
-    - `get_neighbors(entity_id: str, relation_type: str | None, direction: str) -> list[Entity]`
-    - `traverse(start_id: str, depth: int, relation_types: list[str] | None) -> list[Path]`
-    - `shortest_path(from_id: str, to_id: str) -> list[str] | None`
-    - `execute_cypher(query: str, params: dict | None) -> list[dict]`
-  - `VectorStore`
-    - `upsert_chunks(chunks: list[Chunk]) -> None`
-    - `search(query_embedding: list[float], top_k: int, filters: dict | None) -> list[ChunkResult]`
-    - `delete_chunks(chunk_ids: list[str]) -> None`
-  - `MetadataStore`
-    - `upsert_source(source: Source) -> None`
-    - `upsert_document(doc: Document) -> None`
-    - `upsert_chunk(chunk: Chunk) -> None`
-    - `get_provenance(entity_id: str) -> list[Evidence]`
-    - `create_snapshot(version: GraphVersion) -> None`
-    - `get_snapshot(version_id: str) -> GraphVersion | None`
-- [ ] 创建 `eidos/store/factory.py`：
-  - `get_graph_store(config) -> GraphStore` — 默认返回 KuzuStore
-  - `get_vector_store(config) -> VectorStore` — 默认返回 LanceDBStore
-  - `get_metadata_store(config) -> MetadataStore` — 默认返回 SQLite store
-- [ ] 添加 typing stub，让 mypy 能校验实现完整性
+- [ ] 创建 `eidos/parse/chunker.py`
+- [ ] 实现 `chunk_code(parse_result: CodeParseResult) -> list[Chunk]`
+- [ ] 实现 `chunk_document(parse_result: DocumentParseResult) -> list[Chunk]`
+- [ ] 代码 chunk：
+  - 函数/方法级优先
+  - 类定义可作为独立 chunk
+  - 保留 start_line / end_line
+- [ ] 文档 chunk：
+  - 标题 + 段落组合
+  - 控制最大字符数
+  - 保留标题路径和源文件
+- [ ] Chunk ID 稳定：`{file_path}:chunk:{start_line}:{hash}`
 
 ### 验收标准
 
-- [ ] `KuzuStore`、`LanceDBStore`、`MetadataStore` 均通过 `isinstance(store, GraphStore/VectorStore/MetadataStore)` 检查
-- [ ] 配置指定默认后端时，`get_graph_store(config)` 返回可用的 `KuzuStore` 实例
-- [ ] 新增后端（如 `Neo4jStore`）只需实现 ABC 方法，无需改动业务逻辑
-- [ ] mypy 在 `eidos/store/` 模块上报零错误
+- [ ] Python fixture 生成函数级 chunk
+- [ ] TypeScript fixture 生成函数/组件级 chunk
+- [ ] Markdown fixture 生成段落级 chunk
+- [ ] Chunk 包含 content、start_line、end_line、modality
+- [ ] 同一输入重复分块，Chunk ID 一致
 
 ### 依赖
-- #1（项目骨架）
-- #3（Kuzu 实现，提供具体 GraphStore）
-- #4（LanceDB 实现，提供具体 VectorStore）
-- #5（SQLite 实现，提供具体 MetadataStore）
-- #6（共享类型，用于 ABC 签名）
+- #18 Python 代码解析器
+- #19 TypeScript / JavaScript 代码解析器
+- #22 Markdown / TXT 文档解析
+- #23 PDF 文档解析
 
 ---
 
-## Phase 1 完成关卡
+## [parse] #25 Phase 2 集成验证
 
-Phase 2 开始前，Phase 1 所有任务必须通过以下集成检查：
+**Scope**: `parse`
+**优先级**: P0
+**预估工作量**: 1 天
 
-```python
-from eidos.core.config import get_settings
-from eidos.store.factory import get_graph_store, get_vector_store, get_metadata_store
-from eidos.core.types import Entity, Relation, Chunk, Evidence
+### 描述
+对 Phase 2 所有解析能力做端到端集成验证：扫描目录 → 哈希判断 → 分发解析 → 抽取实体/关系 → 生成 chunk。该任务不写入 Kuzu/LanceDB/SQLite，只验证解析层输出稳定可靠。
 
-config = get_settings()
-graph = get_graph_store(config)
-vector = get_vector_store(config)
-meta = get_metadata_store(config)
+### 任务
 
-# 关卡 1：存储可用
-entity = Entity(id="test-func", name="test", type="function", ...)
-graph.upsert_node(entity)
-assert graph.get_entity("test-func") is not None
+- [ ] 创建 `tests/fixtures/phase2_project/`
+  - `main.py`
+  - `app.tsx`
+  - `service.go`
+  - `README.md`
+  - `notes.txt`
+  - `sample.pdf`
+- [ ] 创建集成测试 `tests/integration/test_phase2_parse_pipeline.py`
+- [ ] 实现测试流程：
+  - `LocalScanner.scan()`
+  - `HashCache.has_changed()`
+  - `CodeParserRegistry.parse_file()`
+  - `symbols_to_entities()` / `symbols_to_relations()`
+  - `chunk_code()` / `chunk_document()`
+- [ ] 输出 Phase 2 解析统计：
+  - 扫描文件数
+  - 解析成功数
+  - Entity 数
+  - Relation 数
+  - Chunk 数
+  - Error 数
 
-# 关卡 2：溯源链可写入
-chunk = Chunk(id="c1", document_id="d1", content="def test(): pass", ...)
-vector.upsert_chunks([chunk])
-meta.upsert_chunk(chunk)
+### 验收标准
 
-# 关卡 3：类型序列化正确
-json_str = entity.model_dump_json()
-assert "test-func" in json_str
-```
+- [ ] Phase 2 fixture 项目端到端解析通过
+- [ ] 至少生成 10 个 Entity
+- [ ] 至少生成 5 条 Relation
+- [ ] 至少生成 5 个 Chunk
+- [ ] 第二次运行 hash cache 标记未变更文件
+- [ ] 所有解析错误被收集在结果中，而不是导致流程崩溃
+
+### 依赖
+- #15 本地文件扫描与文件类型识别
+- #16 内容哈希缓存
+- #17 tree-sitter 代码解析基础框架
+- #18 Python 代码解析器
+- #19 TypeScript / JavaScript 代码解析器
+- #20 Go 代码解析器
+- #21 代码实体抽取与关系抽取
+- #22 Markdown / TXT 文档解析
+- #23 PDF 文档解析
+- #24 分块策略
+
+---
+
+## Phase 2 完成关卡
+
+Phase 3 开始前，Phase 2 必须满足以下条件：
+
+- [ ] 本地目录扫描可稳定输出文件清单
+- [ ] 内容哈希缓存可识别 changed / unchanged 文件
+- [ ] Python / TypeScript / Go 至少三种语言解析可用
+- [ ] Markdown / TXT / PDF 文档解析可用
+- [ ] 代码实体与确定性关系可生成
+- [ ] 代码和文档均可生成 Chunk
+- [ ] 解析层不依赖存储层，可独立测试
 
 ---
 
 ## 任务依赖图
 
-```
-#1 项目骨架
+```text
+#15 本地文件扫描
    │
-   ├──► #2 配置系统
+   ├──► #16 内容哈希缓存
+   │
+   ├──► #17 代码解析框架
    │       │
-   │       ├──► #3 Kuzu 存储 ──┐
-   │       │                   │
-   │       ├──► #4 LanceDB 存储 ├─► #7 存储抽象接口
-   │       │                   │
-   │       └──► #5 SQLite 存储 ─┘
-   │
-   └──► #6 共享类型 ──────────────► #7 存储抽象接口
+   │       ├──► #18 Python 解析器 ───────┐
+   │       ├──► #19 TS/JS 解析器 ────────┼──► #21 代码实体/关系抽取 ───┐
+   │       └──► #20 Go 解析器 ───────────┘                              │
+   │                                                                    │
+   ├──► #22 Markdown/TXT 解析 ───► #23 PDF 解析 ───► #24 分块策略 ───────┤
+   │                                                                    │
+   └────────────────────────────────────────────────────────────────────► #25 集成验证
 ```
