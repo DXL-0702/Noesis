@@ -15,6 +15,7 @@ class ScannedFile(BaseModel):
     size_bytes: int
     modality: str
     language: str
+    changed: bool = True
 
 
 _SUFFIX_TO_MODALITY: dict[str, str] = {
