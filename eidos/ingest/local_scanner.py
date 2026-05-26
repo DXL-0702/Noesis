@@ -106,7 +106,7 @@ class LocalScanner:
 def _is_excluded(relative_path: str, patterns: list[str]) -> bool:
     for pattern in patterns:
         if fnmatch.fnmatch(relative_path, pattern) or fnmatch.fnmatch(
-            relative_path.split("/")[0], pattern.rstrip("/**")
+            relative_path.split("/")[0], pattern.removesuffix("/**")
         ):
             return True
     return False

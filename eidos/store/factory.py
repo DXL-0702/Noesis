@@ -1,7 +1,6 @@
 """Storage factory for creating configured store instances."""
 
 from eidos.core.config import Settings
-
 from eidos.store.base import GraphStore, MetadataStore, VectorStore
 from eidos.store.kuzu_store import KuzuStore
 from eidos.store.lancedb_store import LanceDBStore

@@ -173,7 +173,9 @@ class KuzuStore(GraphStore):
             paths.append(Path(nodes=[start_node, end_node], edges=edges))
         return paths
 
-    def execute_cypher(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def execute_cypher(
+        self, query: str, params: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         result = self._connection().execute(query, parameters=params or {})
         rows: list[dict[str, Any]] = []
         while result.has_next():

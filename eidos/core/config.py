@@ -118,7 +118,9 @@ class Settings(BaseSettings):
         if self.models.llm.provider != "ollama":
             return True
         try:
-            response = httpx.get(f"{self.models.llm.base_url}/api/tags", timeout=timeout)
+            response = httpx.get(
+                f"{self.models.llm.base_url}/api/tags", timeout=timeout
+            )
             return response.status_code == 200
         except httpx.HTTPError:
             return False

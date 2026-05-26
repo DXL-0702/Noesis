@@ -31,7 +31,7 @@ jobs:
         run: ruff check eidos
 
       - name: Format check
-        run: black --check eidos
+        run: black --check --fast eidos
 
       - name: Test
         run: pytest

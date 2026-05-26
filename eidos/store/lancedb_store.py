@@ -31,7 +31,9 @@ class LanceDBStore(VectorStore):
         path = pathlib.Path(db_path)
         path.mkdir(parents=True, exist_ok=True)
         self._db = lancedb.connect(str(path))
-        self._table = self._db.create_table(table_name, schema=ChunkRecord, exist_ok=True)
+        self._table = self._db.create_table(
+            table_name, schema=ChunkRecord, exist_ok=True
+        )
         return self
 
     def upsert_chunks(self, chunks: list[Chunk]) -> None:
@@ -40,19 +42,20 @@ class LanceDBStore(VectorStore):
         records = []
         for chunk in chunks:
             embedding = chunk.embedding if chunk.embedding else [0.0] * 384
-            records.append({
-                "chunk_id": chunk.id,
-                "content": chunk.content,
-                "source_file": "",
-                "modality": chunk.modality,
-                "embedding": np.array(embedding, dtype=np.float32),
-                "created_at": chunk.created_at,
-            })
+            records.append(
+                {
+                    "chunk_id": chunk.id,
+                    "content": chunk.content,
+                    "source_file": "",
+                    "modality": chunk.modality,
+                    "embedding": np.array(embedding, dtype=np.float32),
+                    "created_at": chunk.created_at,
+                }
+            )
         # LanceDB merge_insert for idempotent upsert by chunk_id
-        self._table.merge_insert("chunk_id") \
-            .when_matched_update_all() \
-            .when_not_matched_insert_all() \
-            .execute(records)
+        self._table.merge_insert(
+            "chunk_id"
+        ).when_matched_update_all().when_not_matched_insert_all().execute(records)
 
     def search(
         self,

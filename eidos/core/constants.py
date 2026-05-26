@@ -1,9 +1,9 @@
 """Eidos core constants and enums."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     DEFINES = "DEFINES"
     IMPORTS = "IMPORTS"
     CALLS = "CALLS"
@@ -18,14 +18,14 @@ class RelationType(str, Enum):
     TESTS = "TESTS"
 
 
-class ConfidenceLabel(str, Enum):
+class ConfidenceLabel(StrEnum):
     EXTRACTED = "EXTRACTED"
     INFERRED = "INFERRED"
     AMBIGUOUS = "AMBIGUOUS"
     CONFLICT = "CONFLICT"
 
 
-class Modality(str, Enum):
+class Modality(StrEnum):
     CODE = "CODE"
     DOCUMENT = "DOCUMENT"
     IMAGE = "IMAGE"
