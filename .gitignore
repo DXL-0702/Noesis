@@ -152,3 +152,9 @@ packages/web/.cache/
 .eidos/
 *.lance/
 *.db
+
+# Claude
+CLAUDE.md
+
+# Issues
+docs/ISSUES_TEMPLATE.md
