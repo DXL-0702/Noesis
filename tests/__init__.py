@@ -1,1 +1,1 @@
-"""Eidos test suite."""
+"""Noesis test suite."""

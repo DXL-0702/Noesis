@@ -1,4 +1,4 @@
-"""Shared Pydantic v2 types for Eidos."""
+"""Shared Pydantic v2 types for Noesis."""
 
 from pydantic import BaseModel, ConfigDict, Field
 

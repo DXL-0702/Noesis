@@ -16,8 +16,8 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
-from eidos.core.types import Chunk, Document, Evidence, GraphVersion, Source
-from eidos.store.base import MetadataStore
+from noesis.core.types import Chunk, Document, Evidence, GraphVersion, Source
+from noesis.store.base import MetadataStore
 
 
 class Base(DeclarativeBase):

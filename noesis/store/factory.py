@@ -1,10 +1,10 @@
 """Storage factory for creating configured store instances."""
 
-from eidos.core.config import Settings
-from eidos.store.base import GraphStore, MetadataStore, VectorStore
-from eidos.store.kuzu_store import KuzuStore
-from eidos.store.lancedb_store import LanceDBStore
-from eidos.store.metadata_store import SQLiteMetadataStore
+from noesis.core.config import Settings
+from noesis.store.base import GraphStore, MetadataStore, VectorStore
+from noesis.store.kuzu_store import KuzuStore
+from noesis.store.lancedb_store import LanceDBStore
+from noesis.store.metadata_store import SQLiteMetadataStore
 
 
 def get_graph_store(config: Settings) -> GraphStore:

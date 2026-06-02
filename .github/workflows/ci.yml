@@ -25,13 +25,13 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Compile check
-        run: python -m compileall eidos scripts
+        run: python -m compileall noesis scripts
 
       - name: Lint
-        run: ruff check eidos
+        run: ruff check noesis
 
       - name: Format check
-        run: black --check --fast eidos
+        run: black --check --fast noesis
 
       - name: Test
         run: pytest

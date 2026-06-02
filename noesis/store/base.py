@@ -1,9 +1,9 @@
-"""Storage abstraction interfaces for Eidos."""
+"""Storage abstraction interfaces for Noesis."""
 
 from abc import ABC, abstractmethod
 from typing import Any
 
-from eidos.core.types import (
+from noesis.core.types import (
     Chunk,
     ChunkResult,
     Document,

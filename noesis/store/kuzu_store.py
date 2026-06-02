@@ -5,8 +5,8 @@ from typing import Any
 
 import kuzu
 
-from eidos.core.types import Entity, Path, Relation
-from eidos.store.base import GraphStore
+from noesis.core.types import Entity, Path, Relation
+from noesis.store.base import GraphStore
 
 
 class KuzuStore(GraphStore):

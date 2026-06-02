@@ -1,4 +1,4 @@
-<h1 align="center" style="font-size: 64px;">Eidos</h1>
+<h1 align="center" style="font-size: 64px;">Noesis</h1>
 
 <p align="center">
   <strong>Local-first, versioned, traceable multimodal knowledge graph OS</strong><br/>
@@ -19,26 +19,26 @@
 
 ---
 
-## What is Eidos?
+## What is Noesis?
 
-Eidos is a **local-first, versioned, traceable multimodal knowledge graph operating system**. It continuously turns code, documents, images, and project history into evolving, traceable GraphRAG memory for humans and AI agents.
+Noesis is a **local-first, versioned, traceable multimodal knowledge graph operating system**. It continuously turns code, documents, images, and project history into evolving, traceable GraphRAG memory for humans and AI agents.
 
 - 🧠 **Multimodal knowledge extraction** — tree-sitter AST for zero-token code parsing, LLM for document semantics, OCR + vision for images
 - 🔍 **Traceable GraphRAG** — every answer carries reasoning path, source evidence, and confidence labels (EXTRACTED / INFERRED / AMBIGUOUS)
 - 📊 **Graph version control** — snapshots, diff, rollback, and time-travel queries over your knowledge graph
 
-> Eidos is not a replacement for vector databases or code graph tools. It is an **orchestration layer** that combines graph DB + vector DB + metadata store into a unified knowledge system with provenance, versioning, and reasoning.
+> Noesis is not a replacement for vector databases or code graph tools. It is an **orchestration layer** that combines graph DB + vector DB + metadata store into a unified knowledge system with provenance, versioning, and reasoning.
 
 ---
 
 ## ⚡ Quick Start
 
 ```bash
-pip install eidos
+pip install noesis
 
-eidos init              # generate eidos.yaml (zero external dependencies)
-eidos ingest ./project  # build knowledge graph from local files
-eidos serve             # start FastAPI server + Web UI
+noesis init              # generate noesis.yaml (zero external dependencies)
+noesis ingest ./project  # build knowledge graph from local files
+noesis serve             # start FastAPI server + Web UI
 ```
 
 Then open `http://localhost:8000` to explore your knowledge graph.
@@ -55,7 +55,7 @@ Then open `http://localhost:8000` to explore your knowledge graph.
 
 ## 🧠 GraphRAG Engine
 
-The core of Eidos is a **traceable GraphRAG fusion engine**:
+The core of Noesis is a **traceable GraphRAG fusion engine**:
 
 ```
 User Query
@@ -87,7 +87,7 @@ Every answer includes:
 
 ## 📡 API
 
-Eidos exposes a **FastAPI** server:
+Noesis exposes a **FastAPI** server:
 
 ```
 POST /api/query              # GraphRAG question answering
@@ -102,8 +102,8 @@ GET  /api/snapshot           # list graph versions (v0.2)
 ## 📦 Project Structure
 
 ```
-Eidos/
-├── eidos/                  # Python main package
+Noesis/
+├── noesis/                  # Python main package
 │   ├── core/               # types, config, constants
 │   ├── ingest/             # data ingestion (local files, GitHub)
 │   ├── parse/              # multimodal parsing (code, docs, images)
@@ -154,4 +154,4 @@ MIT — see [LICENSE](./LICENSE)
 
 ---
 
-<p align="center">Eidos — from the Greek εἶδος: form, essence, the true nature of things</p>
+<p align="center">Noesis — from the Greek νόησις: process of thinking, rational cognition</p>

@@ -8,15 +8,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class KuzuSettings(BaseModel):
-    path: Path = Path(".eidos/graph.db")
+    path: Path = Path(".noesis/graph.db")
 
 
 class LanceDBSettings(BaseModel):
-    path: Path = Path(".eidos/vectors")
+    path: Path = Path(".noesis/vectors")
 
 
 class SQLiteSettings(BaseModel):
-    path: Path = Path(".eidos/metadata.db")
+    path: Path = Path(".noesis/metadata.db")
 
 
 class StorageSettings(BaseModel):
@@ -72,7 +72,7 @@ class IngestSettings(BaseModel):
             ".venv/**",
             "dist/**",
             "build/**",
-            ".eidos/**",
+            ".noesis/**",
         ]
     )
 
@@ -110,7 +110,7 @@ class Settings(BaseSettings):
         ]:
             if not path.exists() or not path.is_dir():
                 raise ValueError(f"storage path is not a directory: {path}")
-            test_file = path / ".eidos_write_test"
+            test_file = path / ".noesis_write_test"
             test_file.write_text("ok", encoding="utf-8")
             test_file.unlink()
 

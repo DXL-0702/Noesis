@@ -1,4 +1,4 @@
-# Eidos Architecture
+# Noesis Architecture
 
 > Local-first multimodal knowledge graph system with traceable GraphRAG.
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-Eidos turns code, documents, images, and project history into a persistent, versioned knowledge graph. It is not a vector database or a code graph visualizer; it is an orchestration layer that combines graph storage, vector retrieval, metadata provenance, and reasoning traces.
+Noesis turns code, documents, images, and project history into a persistent, versioned knowledge graph. It is not a vector database or a code graph visualizer; it is an orchestration layer that combines graph storage, vector retrieval, metadata provenance, and reasoning traces.
 
 Core principles:
 
@@ -51,7 +51,7 @@ Core principles:
 
 ## Storage Model
 
-Eidos uses three stores because each one solves a different problem:
+Noesis uses three stores because each one solves a different problem:
 
 | Store | Default | Role |
 |---|---|---|

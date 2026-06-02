@@ -1,4 +1,4 @@
-<h1 align="center" style="font-size: 64px;">Eidos</h1>
+<h1 align="center" style="font-size: 64px;">Noesis</h1>
 
 <p align="center">
   <strong>本地优先、可版本化、可追溯的多模态知识图谱操作系统</strong><br/>
@@ -19,26 +19,26 @@
 
 ---
 
-## Eidos 是什么？
+## Noesis 是什么？
 
-Eidos 是一个**本地优先、可版本化、可追溯的多模态知识图谱操作系统**。它将代码、文档、图片和项目历史持续转化为可演化、可追溯的 GraphRAG 记忆，供人类与 AI Agent 共同使用。
+Noesis 是一个**本地优先、可版本化、可追溯的多模态知识图谱操作系统**。它将代码、文档、图片和项目历史持续转化为可演化、可追溯的 GraphRAG 记忆，供人类与 AI Agent 共同使用。
 
 - 🧠 **多模态知识提取** — tree-sitter AST 零 Token 代码解析，LLM 文档语义提取，OCR + 视觉模型图片解析
 - 🔍 **可追溯 GraphRAG** — 每条回答附带推理路径、证据来源和置信度标签（EXTRACTED / INFERRED / AMBIGUOUS）
 - 📊 **图谱版本控制** — 快照、Diff、回滚、历史版本时序查询
 
-> Eidos 不是向量数据库或代码图谱工具的替代品。它是将**图数据库 + 向量数据库 + 元数据存储**融合为统一知识系统的**编排层**，具备溯源、版本控制和推理能力。
+> Noesis 不是向量数据库或代码图谱工具的替代品。它是将**图数据库 + 向量数据库 + 元数据存储**融合为统一知识系统的**编排层**，具备溯源、版本控制和推理能力。
 
 ---
 
 ## ⚡ 快速开始
 
 ```bash
-pip install eidos
+pip install noesis
 
-eidos init              # 生成 eidos.yaml（零外部依赖）
-eidos ingest ./project  # 从本地文件构建知识图谱
-eidos serve             # 启动 FastAPI 服务 + Web UI
+noesis init              # 生成 noesis.yaml（零外部依赖）
+noesis ingest ./project  # 从本地文件构建知识图谱
+noesis serve             # 启动 FastAPI 服务 + Web UI
 ```
 
 然后打开 `http://localhost:8000` 探索你的知识图谱。
@@ -55,7 +55,7 @@ eidos serve             # 启动 FastAPI 服务 + Web UI
 
 ## 🧠 GraphRAG 引擎
 
-Eidos 的核心是**可追溯的 GraphRAG 融合引擎**：
+Noesis 的核心是**可追溯的 GraphRAG 融合引擎**：
 
 ```
 用户查询
@@ -87,7 +87,7 @@ Eidos 的核心是**可追溯的 GraphRAG 融合引擎**：
 
 ## 📡 API
 
-Eidos 暴露 **FastAPI** 服务：
+Noesis 暴露 **FastAPI** 服务：
 
 ```
 POST /api/query              # GraphRAG 问答
@@ -102,8 +102,8 @@ GET  /api/snapshot           # 图谱版本列表（v0.2）
 ## 📦 项目结构
 
 ```
-Eidos/
-├── eidos/                  # Python 主包
+Noesis/
+├── noesis/                  # Python 主包
 │   ├── core/               # 类型、配置、常量
 │   ├── ingest/             # 数据接入（本地文件、GitHub）
 │   ├── parse/              # 多模态解析（代码、文档、图片）
@@ -154,4 +154,4 @@ MIT — 详见 [LICENSE](./LICENSE)
 
 ---
 
-<p align="center">Eidos — 源自希腊语 εἶδος：形式、本质、事物的真实面目</p>
+<p align="center">Noesis — 源自希腊语 νόησις：思维过程、理性认知</p>

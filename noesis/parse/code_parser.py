@@ -1,4 +1,4 @@
-"""Code parser framework for Eidos."""
+"""Code parser framework for Noesis."""
 
 from abc import ABC, abstractmethod
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Eidos core constants and enums."""
+"""Noesis core constants and enums."""
 
 from enum import StrEnum
 

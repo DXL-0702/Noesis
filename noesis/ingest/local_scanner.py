@@ -1,11 +1,11 @@
-"""Local directory scanner for Eidos."""
+"""Local directory scanner for Noesis."""
 
 import fnmatch
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from eidos.core.config import Settings
+from noesis.core.config import Settings
 
 
 class ScannedFile(BaseModel):

@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from eidos.ingest.local_scanner import ScannedFile
+from noesis.ingest.local_scanner import ScannedFile
 
 _CACHE_SCHEMA_VERSION = "1"
 
@@ -19,7 +19,7 @@ def compute_file_hash(path: Path) -> str:
 
 class HashCache:
     def __init__(
-        self, cache_path: str | Path = ".eidos/cache/file_hashes.json"
+        self, cache_path: str | Path = ".noesis/cache/file_hashes.json"
     ) -> None:
         self._cache_path = Path(cache_path)
         self._entries: dict[str, dict] = {}

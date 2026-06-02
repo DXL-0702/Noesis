@@ -7,8 +7,8 @@ import lancedb
 import numpy as np
 from lancedb.pydantic import LanceModel, Vector
 
-from eidos.core.types import Chunk, ChunkResult
-from eidos.store.base import VectorStore
+from noesis.core.types import Chunk, ChunkResult
+from noesis.store.base import VectorStore
 
 
 class ChunkRecord(LanceModel):

@@ -5,7 +5,7 @@ from pathlib import Path
 from tree_sitter import Language, Parser
 from tree_sitter_python import language
 
-from eidos.parse.code_parser import (
+from noesis.parse.code_parser import (
     CodeParseResult,
     CodeSymbol,
     LanguageParser,
@@ -117,7 +117,13 @@ class PythonParser(LanguageParser):
                 expr = first_stmt.children[0]
                 if expr.type == "string":
                     docstring = content[expr.start_byte : expr.end_byte]
-                    return docstring.strip('"""').strip("'''").strip()
+                    # Remove triple quotes using removeprefix/removesuffix
+                    docstring = docstring.strip()
+                    if docstring.startswith('"""') and docstring.endswith('"""'):
+                        return docstring[3:-3].strip()
+                    if docstring.startswith("'''") and docstring.endswith("'''"):
+                        return docstring[3:-3].strip()
+                    return docstring
         return None
 
 
