@@ -1,10 +1,10 @@
 storage:
   kuzu:
-    path: .eidos/graph.db
+    path: .noesis/graph.db
   lancedb:
-    path: .eidos/vectors
+    path: .noesis/vectors
   sqlite:
-    path: .eidos/metadata.db
+    path: .noesis/metadata.db
 
 models:
   embedding:
@@ -35,4 +35,4 @@ ingest:
     - .venv/**
     - dist/**
     - build/**
-    - .eidos/**
+    - .noesis/**
