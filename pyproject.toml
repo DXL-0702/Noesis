@@ -33,6 +33,7 @@ dependencies = [
     "tree-sitter >= 0.22.0",
     "tree-sitter-python >= 0.21.0",
     "tree-sitter-javascript >= 0.21.0",
+    "tree-sitter-typescript >= 0.21.0",
     "PyMuPDF >= 1.24.0",
     "markdown-it-py >= 3.0.0",
     "Pillow >= 10.0.0",
