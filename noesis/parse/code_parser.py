@@ -135,6 +135,7 @@ def _ensure_builtin_parsers() -> None:
     if _builtins_registered:
         return
     _builtins_registered = True
+    import noesis.parse.go_parser  # noqa: F401
     import noesis.parse.python_parser  # noqa: F401
     import noesis.parse.typescript_parser  # noqa: F401
 

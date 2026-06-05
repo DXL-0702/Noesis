@@ -42,6 +42,24 @@ def test_python_parser_keeps_phase_2_contract() -> None:
     assert {"value.strip", "normalize", "Path", "os.getcwd"} <= _names(result.calls)
 
 
+def test_go_parser_extracts_package_imports_functions_methods_and_calls() -> None:
+    result = parse_file(FIXTURES / "service.go", "go")
+
+    assert result.errors == []
+    assert _names(result.imports) == {"fmt", "net/http"}
+    assert {"service", "NewUserService", "Load", "normalize"} <= _names(result.symbols)
+    assert _kinds_by_name(result.symbols)["service"] == "package"
+    assert _kinds_by_name(result.symbols)["NewUserService"] == "function"
+    assert _kinds_by_name(result.symbols)["normalize"] == "function"
+    assert _kinds_by_name(result.symbols)["Load"] == "method"
+    assert _symbol(result.symbols, "Load").parent == "UserService"
+    assert {"fmt.Println", "http.Get", "normalize"} <= _names(result.calls)
+
+    load = _symbol(result.symbols, "Load")
+    assert load.id.endswith(":method:Load:14")
+    assert load.text.startswith("func (s *UserService) Load")
+
+
 def test_unsupported_language_returns_clear_error() -> None:
     result = parse_file(FIXTURES / "sample.py", "ruby")
 
