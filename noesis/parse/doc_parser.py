@@ -5,6 +5,8 @@ from pathlib import Path
 from markdown_it import MarkdownIt
 from pydantic import BaseModel, Field
 
+_MARKDOWN_PARSER = MarkdownIt("commonmark")
+
 
 class DocumentSection(BaseModel):
     title: str
@@ -48,7 +50,7 @@ def parse_document_file(
     file_path: Path, language: str | None = None
 ) -> DocumentParseResult:
     """Parse a Markdown or plain text document from disk."""
-    resolved_language = language or _language_from_suffix(file_path)
+    resolved_language = (language or _language_from_suffix(file_path)).lower()
     try:
         content = file_path.read_text(encoding="utf-8")
     except UnicodeDecodeError as error:
@@ -75,8 +77,7 @@ def parse_document_file(
 
 def parse_markdown(file_path: Path, content: str) -> DocumentParseResult:
     """Parse Markdown content into document structure."""
-    parser = MarkdownIt("commonmark")
-    tokens = parser.parse(content)
+    tokens = _MARKDOWN_PARSER.parse(content)
 
     sections: list[DocumentSection] = []
     links: list[DocumentLink] = []

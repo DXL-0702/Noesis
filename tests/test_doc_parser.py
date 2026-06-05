@@ -31,6 +31,13 @@ def test_markdown_parser_extracts_sections_links_code_blocks_and_paragraphs() ->
     ]
 
 
+def test_document_parser_accepts_case_insensitive_language() -> None:
+    result = parse_document_file(FIXTURES / "guide.md", "Markdown")
+
+    assert result.errors == []
+    assert result.title == "Noesis Guide"
+
+
 def test_text_parser_splits_paragraphs_on_blank_lines() -> None:
     result = parse_document_file(FIXTURES / "notes.txt", "text")
 
