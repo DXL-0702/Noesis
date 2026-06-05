@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from noesis.parse.doc_parser import parse_document_file
+from noesis.parse.doc_parser import parse_document_file, parse_markdown
 
 FIXTURES = Path(__file__).parent / "fixtures" / "parse"
 
@@ -46,6 +46,24 @@ def test_text_parser_splits_paragraphs_on_blank_lines() -> None:
         (1, 2),
         (4, 4),
         (6, 7),
+    ]
+
+
+def test_markdown_parser_handles_untagged_code_blocks() -> None:
+    result = parse_markdown(Path("untagged.md"), "```\nplain code\n```\n")
+
+    assert result.errors == []
+    assert len(result.code_blocks) == 1
+    assert result.code_blocks[0].language is None
+    assert result.code_blocks[0].content == "plain code\n"
+
+
+def test_markdown_parser_extracts_rich_link_text() -> None:
+    result = parse_markdown(Path("links.md"), "[`Module`\nAPI](./api.md)\n")
+
+    assert result.errors == []
+    assert [(link.text, link.url) for link in result.links] == [
+        ("Module API", "./api.md")
     ]
 
 

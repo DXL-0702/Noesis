@@ -114,10 +114,9 @@ def parse_markdown(file_path: Path, content: str) -> DocumentParseResult:
             links.extend(_links_from_inline(inline, start_line, end_line))
         elif token.type in {"fence", "code_block"}:
             start_line, end_line = _line_span(token)
-            language = token.info.strip().split(maxsplit=1)[0] or None
             code_blocks.append(
                 DocumentCodeBlock(
-                    language=language,
+                    language=_code_block_language(token.info),
                     content=token.content,
                     start_line=start_line,
                     end_line=end_line,
@@ -209,16 +208,11 @@ def _links_from_inline(inline, start_line: int, end_line: int) -> list[DocumentL
 
         url = _token_attr(child, "href")
         title = _token_attr(child, "title")
-        link_text_parts: list[str] = []
-        index += 1
-        while index < len(children) and children[index].type != "link_close":
-            if children[index].type in {"text", "code", "html_inline"}:
-                link_text_parts.append(children[index].content)
-            index += 1
+        link_text, index = _link_text_from_children(children, index + 1)
         if url:
             links.append(
                 DocumentLink(
-                    text="".join(link_text_parts).strip(),
+                    text=link_text,
                     url=url,
                     title=title,
                     start_line=start_line,
@@ -227,6 +221,24 @@ def _links_from_inline(inline, start_line: int, end_line: int) -> list[DocumentL
             )
         index += 1
     return links
+
+
+def _code_block_language(info: str) -> str | None:
+    parts = info.strip().split(maxsplit=1)
+    return parts[0] if parts else None
+
+
+def _link_text_from_children(children: list, start_index: int) -> tuple[str, int]:
+    text_parts: list[str] = []
+    index = start_index
+    while index < len(children) and children[index].type != "link_close":
+        child = children[index]
+        if child.type in {"text", "code_inline", "html_inline"}:
+            text_parts.append(child.content)
+        elif child.type in {"softbreak", "hardbreak"}:
+            text_parts.append(" ")
+        index += 1
+    return "".join(text_parts).strip(), index
 
 
 def _token_attr(token, name: str) -> str | None:
