@@ -67,6 +67,24 @@ def test_entity_and_relation_ids_are_stable() -> None:
     assert _ids(symbols_to_relations(first)) == _ids(symbols_to_relations(second))
 
 
+def test_calls_resolve_to_correct_symbol_when_names_collide() -> None:
+    result = parse_file(FIXTURES / "collision.py", "python")
+    relations = symbols_to_relations(result)
+
+    assert _has_relation_by_id_suffix(
+        relations,
+        ":method:load:10",
+        RelationType.CALLS.value,
+        ":call:first:11",
+    )
+    assert _has_relation_by_id_suffix(
+        relations,
+        ":method:load:15",
+        RelationType.CALLS.value,
+        ":call:second:16",
+    )
+
+
 def _names(entities: list[Entity]) -> set[str]:
     return {entity.name for entity in entities}
 
@@ -94,6 +112,22 @@ def _has_relation(
             source.name == source_name
             and relation.type == relation_type
             and target.name == target_name
+        ):
+            return True
+    return False
+
+
+def _has_relation_by_id_suffix(
+    relations: list[Relation],
+    source_suffix: str,
+    relation_type: str,
+    target_suffix: str,
+) -> bool:
+    for relation in relations:
+        if (
+            relation.source_entity_id.endswith(source_suffix)
+            and relation.type == relation_type
+            and relation.target_entity_id.endswith(target_suffix)
         ):
             return True
     return False

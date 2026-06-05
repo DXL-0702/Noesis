@@ -27,7 +27,6 @@ def symbols_to_relations(result: CodeParseResult) -> list[Relation]:
     """Convert a code parse result into deterministic relations."""
     file_entity_id = _file_entity_id(result.file_path)
     symbol_by_name = _symbols_by_name(result.symbols)
-    symbol_by_id = {symbol.id: symbol for symbol in result.symbols}
 
     relations: list[Relation] = []
 
@@ -36,7 +35,10 @@ def symbols_to_relations(result: CodeParseResult) -> list[Relation]:
             _relation(file_entity_id, RelationType.DEFINES.value, symbol.id)
         )
         if symbol.kind == "method" and symbol.parent:
-            parent_symbol = symbol_by_name.get(symbol.parent)
+            parent_symbol = _resolve_symbol_at_line(
+                symbol_by_name.get(symbol.parent, []),
+                symbol.start_line,
+            )
             if parent_symbol is not None:
                 relations.append(
                     _relation(
@@ -54,8 +56,11 @@ def symbols_to_relations(result: CodeParseResult) -> list[Relation]:
     for call in result.calls:
         if call.parent is None:
             continue
-        caller = symbol_by_name.get(call.parent)
-        if caller is None or caller.id not in symbol_by_id:
+        caller = _resolve_symbol_at_line(
+            symbol_by_name.get(call.parent, []),
+            call.start_line,
+        )
+        if caller is None:
             continue
         relations.append(_relation(caller.id, RelationType.CALLS.value, call.id))
 
@@ -105,11 +110,30 @@ def _file_entity_id(file_path: Path) -> str:
     return f"file:{file_path.as_posix()}"
 
 
-def _symbols_by_name(symbols: list[CodeSymbol]) -> dict[str, CodeSymbol]:
-    result: dict[str, CodeSymbol] = {}
+def _symbols_by_name(symbols: list[CodeSymbol]) -> dict[str, list[CodeSymbol]]:
+    result: dict[str, list[CodeSymbol]] = {}
     for symbol in symbols:
-        result.setdefault(symbol.name, symbol)
+        result.setdefault(symbol.name, []).append(symbol)
     return result
+
+
+def _resolve_symbol_at_line(
+    candidates: list[CodeSymbol], line: int
+) -> CodeSymbol | None:
+    matching = [
+        candidate
+        for candidate in candidates
+        if candidate.start_line <= line <= candidate.end_line
+    ]
+    if not matching:
+        return None
+    return min(
+        matching,
+        key=lambda candidate: (
+            candidate.end_line - candidate.start_line,
+            candidate.start_line,
+        ),
+    )
 
 
 def _dedupe_entities(entities: list[Entity]) -> list[Entity]:
