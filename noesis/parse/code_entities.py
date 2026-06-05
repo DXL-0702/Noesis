@@ -1,5 +1,6 @@
 """Convert parsed code symbols into Noesis entities and relations."""
 
+from itertools import chain
 from pathlib import Path
 
 from noesis.core.constants import ConfidenceLabel, RelationType
@@ -13,12 +14,12 @@ _MODALITY = "code"
 def symbols_to_entities(result: CodeParseResult) -> list[Entity]:
     """Convert a code parse result into deterministic entities."""
     entities = [_file_entity(result.file_path)]
-    for symbol in [
-        *result.symbols,
-        *result.imports,
-        *result.exports,
-        *result.calls,
-    ]:
+    for symbol in chain(
+        result.symbols,
+        result.imports,
+        result.exports,
+        result.calls,
+    ):
         entities.append(_symbol_entity(symbol, result.file_path))
     return _dedupe_entities(entities)
 
@@ -31,22 +32,24 @@ def symbols_to_relations(result: CodeParseResult) -> list[Relation]:
     relations: list[Relation] = []
 
     for symbol in result.symbols:
-        relations.append(
-            _relation(file_entity_id, RelationType.DEFINES.value, symbol.id)
-        )
-        if symbol.kind == "method" and symbol.parent:
+        parent_symbol = None
+        if symbol.parent:
             parent_symbol = _resolve_symbol_at_line(
                 symbol_by_name.get(symbol.parent, []),
                 symbol.start_line,
             )
-            if parent_symbol is not None:
-                relations.append(
-                    _relation(
-                        parent_symbol.id,
-                        RelationType.CONTAINS.value,
-                        symbol.id,
-                    )
+        if parent_symbol is not None:
+            relations.append(
+                _relation(
+                    parent_symbol.id,
+                    RelationType.CONTAINS.value,
+                    symbol.id,
                 )
+            )
+        else:
+            relations.append(
+                _relation(file_entity_id, RelationType.DEFINES.value, symbol.id)
+            )
 
     for import_symbol in result.imports:
         relations.append(
@@ -55,12 +58,18 @@ def symbols_to_relations(result: CodeParseResult) -> list[Relation]:
 
     for call in result.calls:
         if call.parent is None:
+            relations.append(
+                _relation(file_entity_id, RelationType.CALLS.value, call.id)
+            )
             continue
         caller = _resolve_symbol_at_line(
             symbol_by_name.get(call.parent, []),
             call.start_line,
         )
         if caller is None:
+            relations.append(
+                _relation(file_entity_id, RelationType.CALLS.value, call.id)
+            )
             continue
         relations.append(_relation(caller.id, RelationType.CALLS.value, call.id))
 

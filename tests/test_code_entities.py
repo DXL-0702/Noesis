@@ -41,6 +41,7 @@ def test_typescript_symbols_convert_to_entities_and_relations() -> None:
     assert {"app.tsx", "UserCard", "UserService", "load", "react"} <= _names(entities)
     assert _has_relation(entities, relations, "app.tsx", "DEFINES", "UserCard")
     assert _has_relation(entities, relations, "UserService", "CONTAINS", "load")
+    assert not _has_relation(entities, relations, "app.tsx", "DEFINES", "load")
     assert _has_relation(entities, relations, "app.tsx", "IMPORTS", "react")
     assert _has_relation(entities, relations, "UserCard", "CALLS", "render")
     assert _has_relation(entities, relations, "load", "CALLS", "fetch")
@@ -67,22 +68,33 @@ def test_entity_and_relation_ids_are_stable() -> None:
     assert _ids(symbols_to_relations(first)) == _ids(symbols_to_relations(second))
 
 
-def test_calls_resolve_to_correct_symbol_when_names_collide() -> None:
-    result = parse_file(FIXTURES / "collision.py", "python")
+def test_module_level_calls_are_attributed_to_file() -> None:
+    result = parse_file(FIXTURES / "utils.js", "javascript")
+    entities = symbols_to_entities(result)
     relations = symbols_to_relations(result)
 
-    assert _has_relation_by_id_suffix(
-        relations,
-        ":method:load:10",
-        RelationType.CALLS.value,
-        ":call:first:11",
-    )
-    assert _has_relation_by_id_suffix(
-        relations,
-        ":method:load:15",
-        RelationType.CALLS.value,
-        ":call:second:16",
-    )
+    assert _has_relation(entities, relations, "utils.js", "CALLS", "logger")
+    assert _has_relation(entities, relations, "utils.js", "CALLS", "joinPath")
+
+
+def test_calls_resolve_to_correct_symbol_when_names_collide() -> None:
+    result = parse_file(FIXTURES / "collision.py", "python")
+    entities = symbols_to_entities(result)
+    relations = symbols_to_relations(result)
+
+    alpha_load_ids = _contained_entity_ids(entities, relations, "Alpha", "load")
+    beta_load_ids = _contained_entity_ids(entities, relations, "Beta", "load")
+
+    assert len(alpha_load_ids) == 1
+    assert len(beta_load_ids) == 1
+
+    alpha_calls = _called_names_from_entity_ids(entities, relations, alpha_load_ids)
+    beta_calls = _called_names_from_entity_ids(entities, relations, beta_load_ids)
+
+    assert "first" in alpha_calls
+    assert "second" not in alpha_calls
+    assert "second" in beta_calls
+    assert "first" not in beta_calls
 
 
 def _names(entities: list[Entity]) -> set[str]:
@@ -117,17 +129,31 @@ def _has_relation(
     return False
 
 
-def _has_relation_by_id_suffix(
+def _contained_entity_ids(
+    entities: list[Entity],
     relations: list[Relation],
-    source_suffix: str,
-    relation_type: str,
-    target_suffix: str,
-) -> bool:
-    for relation in relations:
-        if (
-            relation.source_entity_id.endswith(source_suffix)
-            and relation.type == relation_type
-            and relation.target_entity_id.endswith(target_suffix)
-        ):
-            return True
-    return False
+    parent_name: str,
+    child_name: str,
+) -> list[str]:
+    entities_by_id = {entity.id: entity for entity in entities}
+    return [
+        relation.target_entity_id
+        for relation in relations
+        if relation.type == RelationType.CONTAINS.value
+        and entities_by_id[relation.source_entity_id].name == parent_name
+        and entities_by_id[relation.target_entity_id].name == child_name
+    ]
+
+
+def _called_names_from_entity_ids(
+    entities: list[Entity],
+    relations: list[Relation],
+    source_entity_ids: list[str],
+) -> set[str]:
+    entities_by_id = {entity.id: entity for entity in entities}
+    return {
+        entities_by_id[relation.target_entity_id].name
+        for relation in relations
+        if relation.type == RelationType.CALLS.value
+        and relation.source_entity_id in source_entity_ids
+    }
