@@ -18,6 +18,8 @@ class ScannedFile(BaseModel):
     changed: bool = True
 
 
+_MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn"}
+
 _SUFFIX_TO_MODALITY: dict[str, str] = {
     ".py": "code",
     ".ts": "code",
@@ -31,7 +33,6 @@ _SUFFIX_TO_MODALITY: dict[str, str] = {
     ".cpp": "code",
     ".h": "code",
     ".hpp": "code",
-    ".md": "document",
     ".txt": "document",
     ".log": "document",
     ".pdf": "document",
@@ -54,7 +55,6 @@ _SUFFIX_TO_LANGUAGE: dict[str, str] = {
     ".cpp": "cpp",
     ".h": "c",
     ".hpp": "cpp",
-    ".md": "markdown",
     ".txt": "text",
     ".log": "text",
     ".pdf": "pdf",
@@ -63,6 +63,10 @@ _SUFFIX_TO_LANGUAGE: dict[str, str] = {
     ".jpeg": "image",
     ".webp": "image",
 }
+
+for suffix in _MARKDOWN_SUFFIXES:
+    _SUFFIX_TO_MODALITY[suffix] = "document"
+    _SUFFIX_TO_LANGUAGE[suffix] = "markdown"
 
 
 class LocalScanner:

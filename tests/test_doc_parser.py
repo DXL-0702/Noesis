@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from noesis.parse.doc_parser import parse_document_file, parse_markdown
+from noesis.parse.doc_parser import (
+    _code_block_language,
+    parse_document_file,
+    parse_markdown,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "parse"
 
@@ -38,6 +42,16 @@ def test_document_parser_accepts_case_insensitive_language() -> None:
     assert result.title == "Noesis Guide"
 
 
+def test_document_parser_recognizes_common_markdown_suffixes(tmp_path: Path) -> None:
+    file_path = tmp_path / "guide.markdown"
+    file_path.write_text("# Markdown Extension\n", encoding="utf-8")
+
+    result = parse_document_file(file_path)
+
+    assert result.errors == []
+    assert result.title == "Markdown Extension"
+
+
 def test_text_parser_splits_paragraphs_on_blank_lines() -> None:
     result = parse_document_file(FIXTURES / "notes.txt", "text")
 
@@ -72,6 +86,34 @@ def test_markdown_parser_extracts_rich_link_text() -> None:
     assert [(link.text, link.url) for link in result.links] == [
         ("Module API", "./api.md")
     ]
+
+
+def test_markdown_parser_extracts_heading_links() -> None:
+    result = parse_markdown(Path("heading.md"), "# [API Reference](./api.md)\n")
+
+    assert result.errors == []
+    assert [(section.level, section.title) for section in result.sections] == [
+        (1, "API Reference")
+    ]
+    assert [(link.text, link.url) for link in result.links] == [
+        ("API Reference", "./api.md")
+    ]
+
+
+def test_markdown_parser_uses_image_alt_text_for_link_text() -> None:
+    result = parse_markdown(
+        Path("badge.md"),
+        "[![Build Status](badge.svg)](https://ci.example.com)\n",
+    )
+
+    assert result.errors == []
+    assert [(link.text, link.url) for link in result.links] == [
+        ("Build Status", "https://ci.example.com")
+    ]
+
+
+def test_code_block_language_tolerates_none() -> None:
+    assert _code_block_language(None) is None
 
 
 def test_non_utf8_document_returns_errors(tmp_path: Path) -> None:

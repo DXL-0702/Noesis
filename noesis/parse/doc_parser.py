@@ -6,6 +6,7 @@ from markdown_it import MarkdownIt
 from pydantic import BaseModel, Field
 
 _MARKDOWN_PARSER = MarkdownIt("commonmark")
+_MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn"}
 
 
 class DocumentSection(BaseModel):
@@ -87,7 +88,7 @@ def parse_markdown(file_path: Path, content: str) -> DocumentParseResult:
     for index, token in enumerate(tokens):
         if token.type == "heading_open":
             inline = _next_inline(tokens, index)
-            title = inline.content.strip() if inline is not None else ""
+            title = _inline_text(inline)
             start_line, end_line = _line_span(token)
             sections.append(
                 DocumentSection(
@@ -97,6 +98,8 @@ def parse_markdown(file_path: Path, content: str) -> DocumentParseResult:
                     end_line=end_line,
                 )
             )
+            if inline is not None:
+                links.extend(_links_from_inline(inline, start_line, end_line))
         elif token.type == "paragraph_open":
             inline = _next_inline(tokens, index)
             if inline is None:
@@ -172,7 +175,7 @@ def parse_text(file_path: Path, content: str) -> DocumentParseResult:
 
 def _language_from_suffix(file_path: Path) -> str:
     suffix = file_path.suffix.lower()
-    if suffix == ".md":
+    if suffix in _MARKDOWN_SUFFIXES:
         return "markdown"
     if suffix in {".txt", ".log"}:
         return "text"
@@ -209,7 +212,7 @@ def _links_from_inline(inline, start_line: int, end_line: int) -> list[DocumentL
 
         url = _token_attr(child, "href")
         title = _token_attr(child, "title")
-        link_text, index = _link_text_from_children(children, index + 1)
+        link_text, index = _inline_text_until(children, index + 1, "link_close")
         if url:
             links.append(
                 DocumentLink(
@@ -224,17 +227,31 @@ def _links_from_inline(inline, start_line: int, end_line: int) -> list[DocumentL
     return links
 
 
-def _code_block_language(info: str) -> str | None:
+def _code_block_language(info: str | None) -> str | None:
+    if not info:
+        return None
     parts = info.strip().split(maxsplit=1)
     return parts[0] if parts else None
 
 
-def _link_text_from_children(children: list, start_index: int) -> tuple[str, int]:
+def _inline_text(inline) -> str:
+    if inline is None:
+        return ""
+    children = inline.children or []
+    if not children:
+        return inline.content.strip()
+    text, _ = _inline_text_until(children, 0, stop_type=None)
+    return text
+
+
+def _inline_text_until(
+    children: list, start_index: int, stop_type: str | None
+) -> tuple[str, int]:
     text_parts: list[str] = []
     index = start_index
-    while index < len(children) and children[index].type != "link_close":
+    while index < len(children) and children[index].type != stop_type:
         child = children[index]
-        if child.type in {"text", "code_inline", "html_inline"}:
+        if child.type in {"text", "code_inline", "html_inline", "image"}:
             text_parts.append(child.content)
         elif child.type in {"softbreak", "hardbreak"}:
             text_parts.append(" ")
